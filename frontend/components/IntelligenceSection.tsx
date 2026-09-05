@@ -102,7 +102,7 @@ function displayedDateRange(rows: Record<string, unknown>[]): string | null {
   return start === end ? start : `${start} – ${end}`;
 }
 
-export default function IntelligenceSection({ section, initialTab }: { section: string; initialTab?: string }) {
+export default function IntelligenceSection({ section, initialTab, embedded = false }: { section: string; initialTab?: string; embedded?: boolean }) {
   const isSituationHub = section === "situation-map";
   const requestedTab = SITUATION_TABS.some((tab) => tab.id === initialTab)
     ? initialTab as SituationTab
@@ -315,12 +315,12 @@ export default function IntelligenceSection({ section, initialTab }: { section: 
   };
 
   return (
-    <div className="px-5 pb-10 pt-5 md:px-8 lg:px-10 lg:pt-6">
-      <PageHeader
+    <div className={embedded ? "" : "px-5 pb-10 pt-5 md:px-8 lg:px-10 lg:pt-6"}>
+      {!embedded && <PageHeader
         eyebrow={isSituationHub ? SITUATION_HUB.eyebrow : page.eyebrow}
         title={isSituationHub ? SITUATION_HUB.title : page.title}
         description={isSituationHub ? SITUATION_HUB.description : page.description}
-      />
+      />}
 
       {isSituationHub && (
         <section className="panel mb-5 overflow-hidden" aria-label="Indonesia Situation Map views">

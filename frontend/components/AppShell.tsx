@@ -20,7 +20,7 @@ const navGroups: NavGroup[] = [
       ["Incidents", "/incidents", AlertTriangle], ["News", "/news", Newspaper],
       ["Product Intelligence", "/product-intelligence", PackageSearch], ["Event Intelligence", "/event-intelligence", Radar],
       ["HSSE", "/hsse", ShieldAlert],
-      ["TikTok Early Warning", "/tiktok-early-warning", Flame], ["Alerts", "/alerts", BellRing],
+      ["Alerts", "/alerts", BellRing],
     ],
   },
   {
@@ -28,6 +28,7 @@ const navGroups: NavGroup[] = [
     items: [
       ["Discovery Overview", "/tiktok-discovery", Radar],
       ["TikTok public signals", "/tiktok-discovery/public-signals", Smartphone],
+      ["TikTok Early Warning", "/tiktok-discovery/early-warning", Flame],
       ["Discovery Keywords", "/tiktok-discovery/keywords", ListFilter],
       ["Manual TikTok Search", "/tiktok-discovery/manual-search", Search],
       ["Discovery Videos", "/tiktok-discovery/videos", Smartphone],

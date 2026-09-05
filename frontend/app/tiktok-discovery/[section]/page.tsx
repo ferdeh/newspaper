@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import TikTokDiscoveryConsole, { type TikTokDiscoverySection } from "@/components/TikTokDiscoveryConsole";
 
-const sections: TikTokDiscoverySection[] = ["overview", "public-signals", "keywords", "manual-search", "videos", "runs", "settings"];
+const sections: TikTokDiscoverySection[] = ["overview", "public-signals", "early-warning", "keywords", "manual-search", "videos", "runs", "settings"];
 
 export default async function TikTokDiscoverySectionPage({ params }: { params: Promise<{ section: string }> }) {
   const { section } = await params;

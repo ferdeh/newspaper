@@ -113,19 +113,6 @@ const pageGuides: PageGuide[] = [
     ],
   },
   {
-    id: "early-warning",
-    name: "TikTok Early Warning",
-    href: "/tiktok-early-warning",
-    purpose: "Mengukur urutan waktu TikTok terhadap News hanya untuk incident yang memiliki bukti lintas sumber.",
-    cards: [
-      { name: "Average / Median Lead Time", meaning: "Nilai positif berarti TikTok lebih dahulu; negatif berarti News lebih dahulu. Median lebih tahan terhadap pencilan." },
-      { name: "TikTok First %", meaning: "Persentase incident dengan TikTok lebih cepat lebih dari 5 menit." },
-      { name: "News First %", meaning: "Persentase incident dengan News lebih cepat lebih dari 5 menit." },
-      { name: "Simultaneous %", meaning: "Persentase incident dengan selisih waktu maksimal 5 menit." },
-      { name: "By Event", meaning: "Rata-rata menit lead/lag per event type; jangan dibaca sebagai verifikasi kebenaran konten TikTok." },
-    ],
-  },
-  {
     id: "alerts",
     name: "Alerts",
     href: "/alerts",
@@ -162,6 +149,19 @@ const pageGuides: PageGuide[] = [
       { name: "Classification / Location", meaning: "Event dan lokasi adalah hasil ekstraksi pipeline; tanda — atau Unresolved berarti belum berhasil dipetakan." },
       { name: "Confidence", meaning: "Keyakinan pipeline dalam persen, bukan verifikasi bahwa klaim di dalam konten benar." },
       { name: "Incident", meaning: "Kode incident tujuan setelah clustering. Not linked berarti signal belum atau tidak digabungkan." },
+    ],
+  },
+  {
+    id: "early-warning",
+    name: "TikTok Early Warning",
+    href: "/tiktok-discovery/early-warning",
+    purpose: "Mengukur urutan waktu TikTok terhadap News hanya untuk incident yang memiliki bukti lintas sumber.",
+    cards: [
+      { name: "Average / Median Lead Time", meaning: "Nilai positif berarti TikTok lebih dahulu; negatif berarti News lebih dahulu. Median lebih tahan terhadap pencilan." },
+      { name: "TikTok First %", meaning: "Persentase incident dengan TikTok lebih cepat lebih dari 5 menit." },
+      { name: "News First %", meaning: "Persentase incident dengan News lebih cepat lebih dari 5 menit." },
+      { name: "Simultaneous %", meaning: "Persentase incident dengan selisih waktu maksimal 5 menit." },
+      { name: "By Event", meaning: "Rata-rata menit lead/lag per event type; jangan dibaca sebagai verifikasi kebenaran konten TikTok." },
     ],
   },
   {
