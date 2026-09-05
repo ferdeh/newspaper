@@ -1,0 +1,18 @@
+"use client";
+
+import { CheckCircle2, Database, RefreshCw, ServerCog, Wifi, XCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { apiFetch, formatDate, humanize } from "@/lib/api";
+import PageHeader from "./PageHeader";
+
+type Status={api:string;database:string;redis:string;services:{name:string;status:string;last_seen_at?:string;queue_depth:number}[];queues:Record<string,number>;whatsapp_delivery_success_rate:number;last_analytics_refresh?:string};
+export default function SystemMonitor(){
+  const [data,setData]=useState<Status|null>(null);const [error,setError]=useState("");
+  const load=()=>apiFetch<Status>("/system/status").then(setData).catch(x=>setError(x.message));
+  useEffect(()=>{load();const timer=setInterval(load,15000);return()=>clearInterval(timer);},[]);
+  const statusCard=(name:string,status:string,Icon:typeof Database)=><div className="panel p-5"><div className="flex items-center justify-between"><Icon size={18} className="text-petrol"/>{status==="HEALTHY"?<CheckCircle2 size={17} className="text-emerald-600"/>:<XCircle size={17} className="text-red-500"/>}</div><div className="mt-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">{name}</div><div className="mt-1 font-serif text-xl">{status}</div></div>;
+  return <div className="px-5 pb-10 pt-5 md:px-8 lg:px-10 lg:pt-6"><PageHeader eyebrow="Platform observability" title="System Monitor" description="Health, worker heartbeats, pending enrichment, notification delivery, and analytics freshness." action={<button onClick={load} className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold"><RefreshCw size={14}/>Refresh</button>}/>
+    {error&&<div className="mb-5 rounded-xl bg-red-50 p-4 text-red-700">{error}</div>}{!data?<div className="skeleton h-64"/>:<><div className="grid gap-3 sm:grid-cols-3">{statusCard("API",data.api,ServerCog)}{statusCard("PostgreSQL · PostGIS · pgvector",data.database,Database)}{statusCard("Redis queue / cache",data.redis,Wifi)}</div>
+      <div className="mt-5 grid gap-5 xl:grid-cols-[1.4fr_.7fr]"><section className="panel overflow-hidden"><div className="border-b border-slate-200 px-5 py-4"><h2 className="font-serif text-xl">Service heartbeats</h2></div><div className="scroll-table"><table className="data-table"><thead><tr><th>Service</th><th>Status</th><th>Queue depth</th><th>Last seen</th></tr></thead><tbody>{data.services.map(row=><tr key={row.name}><td className="font-bold">{row.name}</td><td><span className={`risk-badge ${row.status==="HEALTHY"?"risk-NORMAL":"risk-HIGH"}`}>{row.status}</span></td><td>{row.queue_depth}</td><td className="text-slate-500">{row.last_seen_at?formatDate(row.last_seen_at,true):"Starting"}</td></tr>)}</tbody></table></div></section><aside className="space-y-5"><section className="panel p-5"><div className="eyebrow">Pipeline queues</div><div className="mt-4 space-y-3">{Object.entries(data.queues).map(([key,value])=><div key={key} className="flex items-center justify-between border-b border-slate-100 pb-3 text-sm"><span>{humanize(key)}</span><span className="font-serif text-xl">{value}</span></div>)}</div></section><section className="panel p-5"><div className="eyebrow">Delivery & freshness</div><div className="mt-4"><div className="metric-number text-4xl">{data.whatsapp_delivery_success_rate}%</div><div className="text-[10px] uppercase tracking-wider text-slate-400">WhatsApp delivery success</div></div><div className="mt-5 border-t border-slate-200 pt-4 text-xs text-slate-500">Last analytics refresh<br/><strong className="text-ink">{data.last_analytics_refresh?formatDate(data.last_analytics_refresh,true):"Pending"}</strong></div></section></aside></div></>}
+  </div>;
+}

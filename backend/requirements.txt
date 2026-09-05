@@ -1,0 +1,17 @@
+alembic==1.14.1
+beautifulsoup4==4.13.3
+celery[redis]==5.4.0
+cryptography==45.0.6
+fastapi==0.115.8
+feedparser==6.0.11
+geoalchemy2==0.17.1
+httpx==0.28.1
+numpy==2.2.3
+orjson==3.10.15
+pgvector==0.3.6
+psycopg[binary]==3.2.5
+pydantic-settings==2.7.1
+python-json-logger==3.2.1
+redis==5.2.1
+sqlalchemy==2.0.38
+uvicorn[standard]==0.34.0

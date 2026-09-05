@@ -1,0 +1,198 @@
+x-backend: &backend
+  image: fuel-intelligence-backend:local
+  env_file: .env
+  environment:
+    PYTHONPATH: /app
+  volumes:
+    - provider_secrets:/home/app/.config/fuel-intelligence
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  networks: [fuel-net]
+
+x-worker-healthcheck: &worker-healthcheck
+  test: ["CMD-SHELL", "celery -A app.workers.celery_app inspect ping --timeout=5 | grep -q pong"]
+  interval: 30s
+  timeout: 10s
+  retries: 5
+  start_period: 30s
+
+services:
+  traefik:
+    image: traefik:v3.3
+    command:
+      - --api.dashboard=false
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --accesslog=true
+      - --ping=true
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    networks: [fuel-net]
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
+        NEXT_PUBLIC_OSM_TILE_URL: ${NEXT_PUBLIC_OSM_TILE_URL:-https://tile.openstreetmap.org/{z}/{x}/{y}.png}
+    env_file: .env
+    environment:
+      API_INTERNAL_URL: http://api:8000/api
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend.rule=PathPrefix(`/`)
+      - traefik.http.routers.frontend.entrypoints=web
+      - traefik.http.routers.frontend.priority=1
+      - traefik.http.services.frontend.loadbalancer.server.port=3000
+    networks: [fuel-net]
+
+  api:
+    <<: *backend
+    build:
+      context: ./backend
+    command: ["/app/entrypoint.sh"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.api.rule=PathPrefix(`/api`) || Path(`/health`) || Path(`/ready`)
+      - traefik.http.routers.api.entrypoints=web
+      - traefik.http.routers.api.priority=100
+      - traefik.http.services.api.loadbalancer.server.port=8000
+
+  news-worker:
+    <<: *backend
+    command: ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "news", "-n", "news@%h", "--concurrency=1", "--loglevel=INFO"]
+    healthcheck: *worker-healthcheck
+
+  tiktok-worker:
+    <<: *backend
+    command: ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "tiktok", "-n", "tiktok@%h", "--concurrency=1", "--loglevel=INFO"]
+    healthcheck: *worker-healthcheck
+
+  nlp-worker:
+    <<: *backend
+    command: ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "nlp", "-n", "nlp@%h", "--concurrency=1", "--loglevel=INFO"]
+    healthcheck: *worker-healthcheck
+
+  geo-worker:
+    <<: *backend
+    command: ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "geo,tbbm", "-n", "geo@%h", "--concurrency=1", "--loglevel=INFO"]
+    healthcheck: *worker-healthcheck
+
+  incident-worker:
+    <<: *backend
+    command: ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "incident", "-n", "incident@%h", "--concurrency=1", "--loglevel=INFO"]
+    healthcheck: *worker-healthcheck
+
+  analytics-worker:
+    <<: *backend
+    command: ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "analytics", "-n", "analytics@%h", "--concurrency=1", "--loglevel=INFO"]
+    healthcheck: *worker-healthcheck
+
+  alert-worker:
+    <<: *backend
+    command: ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "alerts", "-n", "alerts@%h", "--concurrency=1", "--loglevel=INFO"]
+    healthcheck: *worker-healthcheck
+
+  notification-worker:
+    <<: *backend
+    command: ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "notifications", "-n", "notifications@%h", "--concurrency=1", "--loglevel=INFO"]
+    healthcheck: *worker-healthcheck
+
+  whatsapp-worker:
+    <<: *backend
+    command: ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "whatsapp", "-n", "whatsapp@%h", "--concurrency=1", "--loglevel=INFO"]
+    healthcheck: *worker-healthcheck
+
+  scheduler:
+    <<: *backend
+    command: ["celery", "-A", "app.workers.celery_app", "beat", "--loglevel=INFO", "--pidfile=/tmp/celerybeat.pid"]
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/celerybeat.pid && kill -0 $$(cat /tmp/celerybeat.pid)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  postgres:
+    build:
+      context: ./infrastructure/postgres
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fuel_intelligence}
+      POSTGRES_USER: ${POSTGRES_USER:-fuel_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/bootstrap.dump:/opt/fuel-intelligence/bootstrap.dump:ro
+      - ./database/bootstrap.manifest:/opt/fuel-intelligence/bootstrap.manifest:ro
+      - ./infrastructure/postgres/init/20-restore-bootstrap.sh:/docker-entrypoint-initdb.d/20-restore-bootstrap.sh:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB} && psql -U $${POSTGRES_USER} -d $${POSTGRES_DB} -Atqc 'SELECT 1 FROM alembic_version LIMIT 1' | grep -q 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [fuel-net]
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1"]
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [fuel-net]
+
+  test:
+    <<: *backend
+    profiles: ["test"]
+    restart: "no"
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      INTEGRATION_BASE_URL: http://api:8000
+      PYTHONPATH: /app
+    command: ["pytest", "-q"]
+
+volumes:
+  postgres_data:
+  redis_data:
+  provider_secrets:
+
+networks:
+  fuel-net:
+    driver: bridge

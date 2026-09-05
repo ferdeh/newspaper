@@ -1,0 +1,12 @@
+format=PostgreSQL custom archive
+generated_at=2026-09-05T16:04:44Z
+schema_revision=0013_postgis_nearest_tbbm
+sha256=c14c652ce27662f55d8c884fa9cb13c5e562bc2e95550b04e1e0e91de627b7a3
+news_sources=590
+articles=710
+tiktok_posts=360
+signals=1070
+incidents=52
+master_tbbm=129
+tbbm_candidates=2082
+sanitized=tiktok_api_key,email_oauth,email_accounts,email_recipients,email_rules,email_jobs,alert_recipient
