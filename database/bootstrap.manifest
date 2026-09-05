@@ -1,11 +1,11 @@
 format=PostgreSQL custom archive
-generated_at=2026-09-05T16:55:42Z
+generated_at=2026-09-05T17:16:09Z
 schema_revision=0013_postgis_nearest_tbbm
-sha256=54b9994eae261bca5f53f729ec3900f40ce59354524a20134d637eb56c05aec0
+sha256=ccae25a64bec9f4cc2a9b7bf573f017d718fc574b165f2ee68d51a10c7b34c44
 news_sources=590
 articles=710
-tiktok_posts=367
-signals=1077
+tiktok_posts=368
+signals=1078
 incidents=52
 master_tbbm=129
 tbbm_candidates=2082
