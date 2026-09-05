@@ -79,14 +79,14 @@ const pageGuides: PageGuide[] = [
   },
   {
     id: "signals",
-    name: "News & TikTok Signals",
+    name: "News Signals",
     href: "/news",
-    purpose: "Dua register bukti sumber. News adalah lapisan koroborasi; TikTok adalah early signal publik dan media tidak diunduh.",
+    purpose: "Register bukti News sebagai lapisan koroborasi yang diproses melalui pipeline incident yang sama.",
     cards: [
-      { name: "Published / Source / Creator", meaning: "Waktu publikasi dan identitas sumber. Badge LIVE membedakan data nyata dari legacy demo." },
+      { name: "Published / Source", meaning: "Waktu publikasi dan identitas sumber. Badge LIVE membedakan data nyata dari legacy demo." },
       { name: "Classification", meaning: "Event terstruktur hasil pipeline; tanda — berarti belum terklasifikasi atau tidak lolos." },
       { name: "Location", meaning: "Teks lokasi hasil ekstraksi; Unresolved berarti belum cocok dengan master/geocoding." },
-      { name: "Confidence / Relevance", meaning: "News menampilkan relevance dan TikTok menampilkan confidence pipeline dalam persen." },
+      { name: "Relevance", meaning: "Kesesuaian bukti News terhadap konteks distribusi BBM dalam persen." },
       { name: "Incident", meaning: "Kode incident tujuan setelah clustering. Not linked berarti signal belum atau tidak digabungkan." },
     ],
   },
@@ -149,6 +149,19 @@ const pageGuides: PageGuide[] = [
       { name: "Credits Today / This Month", meaning: "Pemakaian credit provider yang terekam per physical request." },
       { name: "Credit controls", meaning: "Search/Transcript memisahkan sumber biaya; Credits per Relevant/Incident membantu menilai efisiensi; projection bukan tagihan final." },
       { name: "Charts", meaning: "Baca panjang batang relatif dalam panel yang sama untuk tren waktu, kategori, keyword, dan lokasi teratas." },
+    ],
+  },
+  {
+    id: "tiktok-public-signals",
+    name: "TikTok Public Signals",
+    href: "/tiktok-discovery/public-signals",
+    purpose: "Register bukti publik TikTok yang sudah masuk ke pipeline canonical; tetap early signal yang belum terverifikasi dan media tidak diunduh.",
+    cards: [
+      { name: "Published / Creator", meaning: "Waktu publikasi dan akun pembuat konten publik. Badge LIVE membedakan data nyata dari legacy demo." },
+      { name: "Caption / Reach", meaning: "Caption dan hashtag adalah bukti teks; views adalah metadata jangkauan saat data dikumpulkan, bukan ukuran kebenaran." },
+      { name: "Classification / Location", meaning: "Event dan lokasi adalah hasil ekstraksi pipeline; tanda — atau Unresolved berarti belum berhasil dipetakan." },
+      { name: "Confidence", meaning: "Keyakinan pipeline dalam persen, bukan verifikasi bahwa klaim di dalam konten benar." },
+      { name: "Incident", meaning: "Kode incident tujuan setelah clustering. Not linked berarti signal belum atau tidak digabungkan." },
     ],
   },
   {

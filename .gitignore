@@ -12,3 +12,5 @@ coverage/
 htmlcov/
 database/.snapshot-*
 database/*.tmp
+database/bootstrap\ *.dump
+database/bootstrap\ *.manifest

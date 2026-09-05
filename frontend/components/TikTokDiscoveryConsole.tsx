@@ -8,8 +8,9 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { apiFetch, formatDate, humanize } from "@/lib/api";
 import PageHeader from "./PageHeader";
+import SignalPage from "./SignalPage";
 
-export type TikTokDiscoverySection = "overview" | "keywords" | "manual-search" | "videos" | "runs" | "settings";
+export type TikTokDiscoverySection = "overview" | "public-signals" | "keywords" | "manual-search" | "videos" | "runs" | "settings";
 
 type Health = {status:string;lastCheckedAt?:string;lastSuccessfulRequestAt?:string;lastError?:string;requestsToday:number;creditsToday:number;creditsThisMonth:number};
 type DiscoverySettings = {
@@ -69,6 +70,7 @@ function intervalLabel(minutes:number){return minutes % 60 === 0 ? `${minutes/60
 export default function TikTokDiscoveryConsole({section}:{section:TikTokDiscoverySection}){
   const titles:Record<TikTokDiscoverySection,[string,string]> = {
     overview:["TikTok Discovery Overview","Monitoring kandidat publik, relevansi, insiden, dan konsumsi credit."],
+    "public-signals":["TikTok Public Signals","Bukti publik TikTok yang sudah masuk ke pipeline signal dan hubungan incident."],
     keywords:["TikTok Keywords","Atur cakupan pencarian dan jadwal efektif setiap keyword."],
     "manual-search":["Manual TikTok Search","Jalankan discovery ad-hoc melalui pipeline dan audit run yang sama."],
     videos:["TikTok Video Feed","Metadata publik, hasil screening, enrichment, dan hubungan insiden."],
@@ -79,6 +81,7 @@ export default function TikTokDiscoveryConsole({section}:{section:TikTokDiscover
     <PageHeader eyebrow="TikTok Discovery" title={titles[section][0]} description={titles[section][1]} />
     <DiscoveryTabs active={section}/>
     {section === "overview" && <Overview/>}
+    {section === "public-signals" && <SignalPage type="tiktok" embedded/>}
     {section === "keywords" && <Keywords/>}
     {section === "manual-search" && <ManualSearch/>}
     {section === "videos" && <Videos/>}
@@ -88,7 +91,7 @@ export default function TikTokDiscoveryConsole({section}:{section:TikTokDiscover
 }
 
 function DiscoveryTabs({active}:{active:TikTokDiscoverySection}){
-  const tabs:[TikTokDiscoverySection,string][] = [["overview","Overview"],["keywords","Keywords"],["manual-search","Manual Search"],["videos","Videos"],["runs","Runs"],["settings","Settings"]];
+  const tabs:[TikTokDiscoverySection,string][] = [["overview","Overview"],["public-signals","TikTok Public Signals"],["keywords","Keywords"],["manual-search","Manual Search"],["videos","Videos"],["runs","Runs"],["settings","Settings"]];
   return <div className="mb-6 flex gap-2 overflow-x-auto border-b border-slate-200 pb-3">
     {tabs.map(([id,label])=><Link key={id} href={id === "overview" ? "/tiktok-discovery" : `/tiktok-discovery/${id}`} className={`whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold ${active===id?"bg-ink text-white":"bg-white text-slate-500 hover:text-ink"}`}>{label}</Link>)}
   </div>;

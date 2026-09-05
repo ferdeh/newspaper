@@ -18,7 +18,6 @@ const navGroups: NavGroup[] = [
     items: [
       ["Overview", "/", CircleGauge], ["Situation Map", "/situation-map", Map],
       ["Incidents", "/incidents", AlertTriangle], ["News", "/news", Newspaper],
-      ["TikTok", "/tiktok", Smartphone],
       ["Product Intelligence", "/product-intelligence", PackageSearch], ["Event Intelligence", "/event-intelligence", Radar],
       ["HSSE", "/hsse", ShieldAlert],
       ["TikTok Early Warning", "/tiktok-early-warning", Flame], ["Alerts", "/alerts", BellRing],
@@ -28,6 +27,7 @@ const navGroups: NavGroup[] = [
     label: "TikTok Discovery",
     items: [
       ["Discovery Overview", "/tiktok-discovery", Radar],
+      ["TikTok Public Signals", "/tiktok-discovery/public-signals", Smartphone],
       ["Discovery Keywords", "/tiktok-discovery/keywords", ListFilter],
       ["Manual TikTok Search", "/tiktok-discovery/manual-search", Search],
       ["Discovery Videos", "/tiktok-discovery/videos", Smartphone],
@@ -40,7 +40,7 @@ const navGroups: NavGroup[] = [
 ];
 
 function isActive(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+  return href === "/" || href === "/tiktok-discovery" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 }
 
 function currentTitle(pathname: string) {
