@@ -153,7 +153,7 @@ const pageGuides: PageGuide[] = [
   },
   {
     id: "tiktok-public-signals",
-    name: "TikTok Public Signals",
+    name: "TikTok public signals",
     href: "/tiktok-discovery/public-signals",
     purpose: "Register bukti publik TikTok yang sudah masuk ke pipeline canonical; tetap early signal yang belum terverifikasi dan media tidak diunduh.",
     cards: [

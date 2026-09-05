@@ -27,7 +27,7 @@ const navGroups: NavGroup[] = [
     label: "TikTok Discovery",
     items: [
       ["Discovery Overview", "/tiktok-discovery", Radar],
-      ["TikTok Public Signals", "/tiktok-discovery/public-signals", Smartphone],
+      ["TikTok public signals", "/tiktok-discovery/public-signals", Smartphone],
       ["Discovery Keywords", "/tiktok-discovery/keywords", ListFilter],
       ["Manual TikTok Search", "/tiktok-discovery/manual-search", Search],
       ["Discovery Videos", "/tiktok-discovery/videos", Smartphone],

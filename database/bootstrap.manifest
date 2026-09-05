@@ -1,7 +1,7 @@
 format=PostgreSQL custom archive
-generated_at=2026-09-05T16:49:03Z
+generated_at=2026-09-05T16:51:09Z
 schema_revision=0013_postgis_nearest_tbbm
-sha256=cd45655d9897355cce59affbe20bdd0b41c721daa1b1129b206b9868be5637ad
+sha256=bf8bbe5c6b7809d4d0e65cd653c99110f683a50a4897d52f4423998b34ad8b05
 news_sources=590
 articles=710
 tiktok_posts=365
