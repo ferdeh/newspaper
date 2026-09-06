@@ -44,6 +44,9 @@ def test_incident_categories_and_risk_contract(client):
 @pytest.mark.integration
 def test_leaflet_map_contract_contains_terminals_and_auditable_geo_sources(client):
     overview = client.get("/api/analytics/overview").json()
+    assert overview["scheduler_update"]["interval_minutes"] > 0
+    assert overview["scheduler_update"]["last_update_at"]
+    assert overview["scheduler_update"]["next_update_at"] > overview["scheduler_update"]["last_update_at"]
     assert all({"date", "incidents", "signals"} <= set(row) for row in overview["trend"])
     assert all(row["signals"] >= row["incidents"] for row in overview["trend"])
     verified = client.get(

@@ -11,6 +11,11 @@ export type KPI = {
 
 export type OverviewData = {
   generated_at: string;
+  scheduler_update: {
+    last_update_at?: string;
+    next_update_at?: string;
+    interval_minutes: number;
+  };
   kpis: KPI;
   trend: { date: string; incidents: number; signals: number }[];
   trending_issues: { name: string; count: number }[];

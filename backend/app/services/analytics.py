@@ -8,6 +8,7 @@ from statistics import median
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, selectinload
 
+from app.config import settings
 from app.models import AnalyticsDaily, Incident, IncidentSignal, MasterLocation, MasterTbbm, Signal
 from app.services.intelligence import risk_band
 from app.services.tbbm_runtime import runtime_tbbm_conditions, verified_tbbm
@@ -168,6 +169,11 @@ def refresh_analytics(db: Session) -> int:
 
 def overview(db: Session, **filters) -> dict:
     now = datetime.now(timezone.utc)
+    last_scheduler_update = db.scalar(select(func.max(AnalyticsDaily.created_at)))
+    next_scheduler_update = (
+        last_scheduler_update + timedelta(minutes=settings.analytics_refresh_minutes)
+        if last_scheduler_update else None
+    )
     incidents = filtered_incidents(db, **filters)
     active = [item for item in incidents if item.status in ("OPEN", "MONITORING")]
     signal_counts = {"NEWS": sum(item.news_count for item in active if item.last_signal_at >= now - timedelta(hours=24)), "TIKTOK": sum(item.tiktok_count for item in active if item.last_signal_at >= now - timedelta(hours=24))}
@@ -189,6 +195,11 @@ def overview(db: Session, **filters) -> dict:
         trend.append({"date": day.isoformat(), "incidents": len(day_items), "signals": sum(item.signal_count for item in day_items)})
     return {
         "generated_at": now.isoformat(),
+        "scheduler_update": {
+            "last_update_at": last_scheduler_update.isoformat() if last_scheduler_update else None,
+            "next_update_at": next_scheduler_update.isoformat() if next_scheduler_update else None,
+            "interval_minutes": settings.analytics_refresh_minutes,
+        },
         "kpis": {
             "active_incidents": len(active), "critical_incidents": len(critical), "news_24h": signal_counts.get("NEWS", 0),
             "tiktok_24h": signal_counts.get("TIKTOK", 0), "supply_incidents": sum(item.event_category == "SUPPLY_DISRUPTION" for item in active),

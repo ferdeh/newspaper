@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Maximize2, Minimize2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CircleMarker, GeoJSON as GeoJSONLayer, MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
 import { divIcon } from "leaflet";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
@@ -100,6 +101,27 @@ function FocusIncident({ point }: { point?: LatLngTuple }) {
   return null;
 }
 
+function ResizeMapWithContainer() {
+  const map = useMap();
+  useEffect(() => {
+    let animationFrame = 0;
+    const invalidateSize = () => {
+      window.cancelAnimationFrame(animationFrame);
+      animationFrame = window.requestAnimationFrame(() => map.invalidateSize({ animate: false }));
+    };
+    const observer = new ResizeObserver(invalidateSize);
+    observer.observe(map.getContainer());
+    document.addEventListener("fullscreenchange", invalidateSize);
+    invalidateSize();
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("fullscreenchange", invalidateSize);
+      window.cancelAnimationFrame(animationFrame);
+    };
+  }, [map]);
+  return null;
+}
+
 function IncidentPopupContent({ incident, showTerminal = true }: { incident: IncidentMapPoint; showTerminal?: boolean }) {
   return <div className="min-w-56 text-xs leading-5">
     <a href={`/incidents/${incident.id}`} className="font-bold text-[#0b73bf]">{incident.code}</a><br />
@@ -123,8 +145,12 @@ export default function LeafletMapInner({
   selectedIncidentId,
   provinceHeatmap = [],
   showProvinceHeatmapToggle = false,
+  allowFullscreen = false,
 }: LeafletMapProps) {
+  const mapFrameRef = useRef<HTMLDivElement>(null);
   const [heatmapEnabled, setHeatmapEnabled] = useState(showProvinceHeatmapToggle);
+  const [nativeFullscreen, setNativeFullscreen] = useState(false);
+  const [fallbackFullscreen, setFallbackFullscreen] = useState(false);
   const [provinceBoundaries, setProvinceBoundaries] = useState<ProvinceBoundaryCollection | null>(null);
   const [boundaryLoading, setBoundaryLoading] = useState(false);
   const [boundaryError, setBoundaryError] = useState("");
@@ -136,6 +162,29 @@ export default function LeafletMapInner({
     () => provinceHeatmap.map((item) => `${item.province}:${item.max_risk}:${item.incident_count}`).join("|"),
     [provinceHeatmap],
   );
+  const isFullscreen = nativeFullscreen || fallbackFullscreen;
+
+  useEffect(() => {
+    const handleFullscreenChange = () => setNativeFullscreen(document.fullscreenElement === mapFrameRef.current);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (fallbackFullscreen) setFallbackFullscreen(false);
+      else if (document.fullscreenElement) void document.exitFullscreen();
+    };
+    if (fallbackFullscreen) document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [fallbackFullscreen, isFullscreen]);
 
   useEffect(() => {
     if (!showProvinceHeatmapToggle || !heatmapEnabled || provinceBoundaries || boundaryError) return;
@@ -188,6 +237,28 @@ export default function LeafletMapInner({
     setHeatmapEnabled((current) => !current);
   };
 
+  const toggleFullscreen = async () => {
+    const frame = mapFrameRef.current;
+    if (!frame) return;
+    if (document.fullscreenElement === frame) {
+      await document.exitFullscreen();
+      return;
+    }
+    if (fallbackFullscreen) {
+      setFallbackFullscreen(false);
+      return;
+    }
+    if (typeof frame.requestFullscreen === "function") {
+      try {
+        await frame.requestFullscreen();
+        return;
+      } catch {
+        // Some embedded browsers deny native fullscreen; use a viewport overlay instead.
+      }
+    }
+    setFallbackFullscreen(true);
+  };
+
   const styleProvince = (feature?: Feature<Geometry, ProvinceBoundaryProperties>) => {
     const name = feature?.properties?.name || "";
     const stats = provinceStats.get(normalizeProvince(name));
@@ -209,13 +280,18 @@ export default function LeafletMapInner({
     });
   };
 
-  return <div className={`relative overflow-hidden rounded-xl border border-slate-200 bg-[#eef4f7] ${heightClass}`}>
+  return <div
+    ref={mapFrameRef}
+    className={`relative overflow-hidden bg-[#eef4f7] ${isFullscreen ? fallbackFullscreen ? "fixed inset-0 z-[1000] h-screen w-screen rounded-none border-0" : "h-screen w-screen rounded-none border-0" : `rounded-xl border border-slate-200 ${heightClass}`}`}
+  >
     <MapContainer center={INDONESIA_CENTER} zoom={5} minZoom={4} scrollWheelZoom={false} preferCanvas className="h-full w-full">
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url={OSM_TILE_URL}
       />
+      <ResizeMapWithContainer />
       {heatmapEnabled && provinceBoundaries && <GeoJSONLayer
+        ref={(layer) => { layer?.bringToBack(); }}
         key={`province-heatmap-${heatmapKey}`}
         data={provinceBoundaries}
         style={styleProvince}
@@ -301,6 +377,16 @@ export default function LeafletMapInner({
           />
         : null)}
     </MapContainer>
+    {allowFullscreen && <button
+      type="button"
+      aria-label={isFullscreen ? "Keluar dari layar penuh" : "Tampilkan peta layar penuh"}
+      aria-pressed={isFullscreen}
+      onClick={toggleFullscreen}
+      className="absolute left-14 top-3 z-[700] inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white/95 px-3 text-[10px] font-black text-ink shadow-md backdrop-blur transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-lime"
+    >
+      {isFullscreen ? <Minimize2 size={15} aria-hidden="true" /> : <Maximize2 size={15} aria-hidden="true" />}
+      <span>{isFullscreen ? "Keluar fullscreen" : "Layar penuh"}</span>
+    </button>}
     {showProvinceHeatmapToggle && <div className="absolute right-3 top-3 z-[650] flex max-w-64 flex-col items-end gap-2">
       <button
         type="button"

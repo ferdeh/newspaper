@@ -55,6 +55,7 @@ const pageGuides: PageGuide[] = [
       { name: "Generated at", meaning: "Waktu server membentuk respons analytics yang sedang dibaca." },
       { name: "Unresolved province incidents", meaning: "Incident aktif yang belum memiliki provinsi canonical; gunakan angka ini sebagai antrean perbaikan kualitas lokasi." },
       { name: "Rentang data peta", meaning: "Tanggal signal paling awal sampai paling akhir dari titik yang benar-benar tampil." },
+      { name: "Scheduler update", meaning: "Last menunjukkan refresh analytics terakhir yang selesai; Next menunjukkan jadwal refresh analytics berikutnya sesuai interval scheduler." },
       { name: "Peta", meaning: "Kuning = supply, merah = laporan kecelakaan MT, biru = gangguan eksternal, hijau = master TBBM. Marker bernomor memuat beberapa incident pada koordinat sama." },
       { name: "Structured analytics", meaning: "Baris dan marker berasal dari data yang sama. Klik baris pada tab Situation Map untuk menyorot marker; cari, urutkan, dan ubah jumlah baris tanpa mengubah sumber data." },
       { name: "Geographic Intelligence", meaning: "Baca incidents sebagai jumlah kejadian per provinsi/regency; News dan TikTok sebagai jumlah bukti, Critical sebagai jumlah band kritis, Average Risk sebagai rata-rata risk kontekstual." },

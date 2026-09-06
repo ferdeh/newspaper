@@ -13,6 +13,7 @@ export type LeafletMapProps = {
   selectedIncidentId?: number | null;
   provinceHeatmap?: ProvinceHeatmapDatum[];
   showProvinceHeatmapToggle?: boolean;
+  allowFullscreen?: boolean;
 };
 
 const LeafletMapInner = dynamic(() => import("./LeafletMapInner"), {

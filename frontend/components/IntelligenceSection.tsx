@@ -246,6 +246,16 @@ export default function IntelligenceSection({ section, initialTab, embedded = fa
       const range = displayedDateRange(sharedOverview.map as unknown as Record<string, unknown>[]);
       return [
         { key: "generated_at", label: "Generated at", value: formatMetricValue("generated_at", sharedOverview.generated_at) },
+        {
+          key: "scheduler_update",
+          label: "Scheduler update",
+          value: sharedOverview.scheduler_update.last_update_at
+            ? `Last: ${formatDate(sharedOverview.scheduler_update.last_update_at, true)}`
+            : "Last: Belum tersedia",
+          detail: sharedOverview.scheduler_update.next_update_at
+            ? `Next: ${formatDate(sharedOverview.scheduler_update.next_update_at, true)}`
+            : "Next: Belum terjadwal",
+        },
         { key: "unresolved_province_incidents", label: "Unresolved province incidents", value: sharedOverview.unresolved_province_incidents.toLocaleString("id-ID") },
         ...(range ? [{ key: "displayed_date_range", label: "Rentang data peta", value: range }] : []),
       ];
@@ -365,11 +375,12 @@ export default function IntelligenceSection({ section, initialTab, embedded = fa
       {isSituationHub && overviewError && <div role="alert" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">Data peta terbaru tidak dapat dimuat: {overviewError}. Peta terakhir yang berhasil dimuat tetap ditampilkan.</div>}
 
       {metricItems.length > 0 && (
-        <div className={`mb-5 grid gap-3 ${isSituationHub ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2 md:grid-cols-3 xl:grid-cols-6"}`}>
+        <div className={`mb-5 grid gap-3 ${isSituationHub ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4" : "grid-cols-2 md:grid-cols-3 xl:grid-cols-6"}`}>
           {metricItems.map((metric) => (
             <div key={metric.key} className="panel min-w-0 p-4">
               <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{metric.label}</div>
               <div className="mt-3 break-words text-lg font-bold leading-snug tracking-tight text-ink sm:text-xl">{metric.value}</div>
+              {metric.detail && <div className="mt-1 text-xs font-semibold text-slate-500">{metric.detail}</div>}
             </div>
           ))}
         </div>
@@ -385,6 +396,7 @@ export default function IntelligenceSection({ section, initialTab, embedded = fa
             selectedIncidentId={activeSection === "situation-map" ? selectedIncidentId : null}
             provinceHeatmap={sharedOverview.province_heatmap}
             showProvinceHeatmapToggle
+            allowFullscreen
           />
           <p className="mt-3 text-[10px] leading-4 text-slate-500">Titik insiden pada peta berasal dari baris Structured Analytics yang sama. Marker kuning menandai gangguan pasokan, merah menandai laporan kecelakaan MT, biru menandai gangguan eksternal, dan hijau adalah referensi master TBBM.</p>
         </div>
