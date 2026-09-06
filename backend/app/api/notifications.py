@@ -651,6 +651,30 @@ def _job_dict(db: Session, row: NotificationJob) -> dict:
     }
 
 
+def _sort_notification_logs(items: list[dict], sort_by: str, sort_order: str) -> list[dict]:
+    field_by_sort = {
+        "timestamp": "timestamp",
+        "alert_id": "alert_id",
+        "incident": "incident",
+        "channel": "channel",
+        "provider": "provider",
+        "sender": "sender",
+        "recipient": "recipient_summary",
+        "subject": "subject",
+        "status": "status",
+        "attempts": "attempts",
+    }
+    field = field_by_sort[sort_by]
+    populated = [item for item in items if item.get(field) not in (None, "")]
+    empty = [item for item in items if item.get(field) in (None, "")]
+
+    def key(item: dict) -> str | int | float:
+        value = item[field]
+        return value if isinstance(value, (int, float)) else str(value).casefold()
+
+    return sorted(populated, key=key, reverse=sort_order == "desc") + empty
+
+
 @router.get("/notification/logs")
 def list_notification_logs(
     db: Db,
@@ -664,6 +688,11 @@ def list_notification_logs(
     date_to: datetime | None = None,
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
+    sort_by: str = Query(
+        "timestamp",
+        pattern="^(timestamp|alert_id|incident|channel|provider|sender|recipient|subject|status|attempts)$",
+    ),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$"),
 ) -> dict:
     query = select(NotificationJob)
     if status_filter:
@@ -683,8 +712,16 @@ def list_notification_logs(
         rows = [row for row in rows if row.payload_json.get("alert", {}).get("severity") == severity.upper()]
     if category:
         rows = [row for row in rows if row.payload_json.get("alert", {}).get("category") == category.upper()]
-    total = len(rows)
-    return {"items": [_job_dict(db, row) for row in rows[offset : offset + limit]], "total": total, "limit": limit, "offset": offset}
+    items = _sort_notification_logs([_job_dict(db, row) for row in rows], sort_by, sort_order)
+    total = len(items)
+    return {
+        "items": items[offset : offset + limit],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "sort_by": sort_by,
+        "sort_order": sort_order,
+    }
 
 
 @router.get("/notification/logs/{job_id}")

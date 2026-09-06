@@ -178,3 +178,36 @@ def test_email_provider_config_contract_never_returns_client_secret(client):
         },
     )
     assert protected.status_code == 401
+
+
+@pytest.mark.integration
+def test_notification_logs_support_global_sort_and_pagination(client):
+    first_page = client.get(
+        "/api/notification/logs",
+        params={"limit": 2, "offset": 0, "sort_by": "timestamp", "sort_order": "desc"},
+    )
+    assert first_page.status_code == 200
+    payload = first_page.json()
+    assert payload["limit"] == 2
+    assert payload["offset"] == 0
+    assert payload["sort_by"] == "timestamp"
+    assert payload["sort_order"] == "desc"
+    assert len(payload["items"]) <= 2
+    timestamps = [item["timestamp"] for item in payload["items"]]
+    assert timestamps == sorted(timestamps, reverse=True)
+
+    if payload["total"] > 2:
+        second_page = client.get(
+            "/api/notification/logs",
+            params={"limit": 2, "offset": 2, "sort_by": "timestamp", "sort_order": "desc"},
+        ).json()
+        assert {item["id"] for item in payload["items"]}.isdisjoint(item["id"] for item in second_page["items"])
+
+    attempts = client.get(
+        "/api/notification/logs",
+        params={"limit": 200, "sort_by": "attempts", "sort_order": "asc"},
+    ).json()["items"]
+    assert [item["attempts"] for item in attempts] == sorted(item["attempts"] for item in attempts)
+
+    invalid_sort = client.get("/api/notification/logs", params={"sort_by": "not_a_column"})
+    assert invalid_sort.status_code == 422

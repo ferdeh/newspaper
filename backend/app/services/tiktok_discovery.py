@@ -183,6 +183,44 @@ def schedule_refresh_keywords(
     return _schedule_keywords(db, now=now, due_only=False, completed_since=completed_since)
 
 
+def recover_stale_search_runs(
+    db: Session,
+    *,
+    now: datetime | None = None,
+    stale_after_minutes: int | None = None,
+) -> int:
+    """Release keywords blocked by search runs abandoned by a stopped worker."""
+    now = now or datetime.now(timezone.utc)
+    recovery_minutes = max(
+        1,
+        stale_after_minutes if stale_after_minutes is not None else settings.tiktok_stale_run_minutes,
+    )
+    stale_before = now - timedelta(minutes=recovery_minutes)
+    stale_runs = db.scalars(
+        select(TikTokSearchRun)
+        .where(
+            TikTokSearchRun.status == "RUNNING",
+            TikTokSearchRun.started_at < stale_before,
+        )
+        .with_for_update(skip_locked=True)
+    ).all()
+    for run in stale_runs:
+        run.status = "FAILED"
+        run.finished_at = now
+        run.error_message = f"STALE_RUN_RECOVERED_AFTER_{recovery_minutes}_MINUTES"
+        if run.keyword_id:
+            keyword = db.get(MasterTikTokKeyword, run.keyword_id)
+            if keyword and keyword.active and (keyword.next_run_at is None or keyword.next_run_at > now):
+                keyword.next_run_at = now
+    if stale_runs:
+        db.flush()
+        logger.warning(
+            "tiktok.search.stale_recovered",
+            extra={"runs_recovered": len(stale_runs), "stale_after_minutes": recovery_minutes},
+        )
+    return len(stale_runs)
+
+
 def _schedule_keywords(
     db: Session,
     *,
@@ -195,6 +233,7 @@ def _schedule_keywords(
     if not row.enabled or not get_tiktok_api_key(row):
         return []
 
+    recover_stale_search_runs(db, now=now)
     running_keyword_ids = set(db.scalars(
         select(TikTokSearchRun.keyword_id).where(
             TikTokSearchRun.keyword_id.is_not(None),
@@ -241,6 +280,12 @@ def execute_search_run(db: Session, run_id: uuid.UUID, provider: TikTokDiscovery
     run = db.get(TikTokSearchRun, run_id)
     if not run:
         return {"run_id": str(run_id), "status": "NOT_FOUND"}
+    if run.status != "RUNNING":
+        logger.info(
+            "tiktok.search.skipped_non_running",
+            extra={"run_id": str(run.id), "status": run.status},
+        )
+        return run_summary(run)
     row = get_tiktok_settings(db)
     keyword = db.get(MasterTikTokKeyword, run.keyword_id) if run.keyword_id else None
     priority = keyword.priority if keyword else "HIGH"

@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     news_priority_minutes: int = 60
     news_general_minutes: int = 120
     tiktok_due_check_seconds: int = 60
+    tiktok_stale_run_minutes: int = 120
     geo_enrichment_minutes: int = 360
     incident_recalc_minutes: int = 30
     risk_recalc_minutes: int = 30

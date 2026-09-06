@@ -174,7 +174,7 @@ const pageGuides: PageGuide[] = [
       { name: "Keywords", meaning: "Interval efektif memakai Global kecuali override. Last/Next Run menunjukkan scheduler; Results/New/Relevant adalah hasil run terakhir." },
       { name: "Manual Search", meaning: "Tetap membuat run audit, dedup, screening, enrichment selektif, dan incident matching; Max Pages membatasi biaya." },
       { name: "Videos", meaning: "Engagement adalah metadata saat discovery; Relevance adalah skor pipeline; Location/TBBM harus dibaca bersama status resolusi." },
-      { name: "Runs", meaning: "API adalah jumlah request, Credits adalah konsumsi, Results hasil mentah, New hasil dedup, Relevant hasil screening, Transcripts hasil enrichment, Incidents hasil pipeline." },
+      { name: "Runs", meaning: "API adalah jumlah request, Credits adalah konsumsi, Results hasil mentah, New hasil dedup, Relevant hasil screening, Transcripts hasil enrichment, Incidents hasil pipeline. Run RUNNING yang macet lebih dari batas recovery otomatis dibuat FAILED dan keyword dijadwalkan ulang tanpa mengulang task lama." },
       { name: "Run detail", meaning: "Timeline mengungkap operation, durasi, credit, status, dan error per request sehingga HTTP 402 dapat dibedakan dari error aplikasi." },
     ],
   },
@@ -185,7 +185,7 @@ const pageGuides: PageGuide[] = [
     purpose: "Menyimpan API key secara terenkripsi, mengatur schedule/search/enrichment, dan melindungi credit.",
     cards: [
       { name: "Provider", meaning: "Connection harus HEALTHY sebelum discovery diaktifkan. API key yang tersimpan hanya ditampilkan sebagai masked state." },
-      { name: "Discovery Schedule", meaning: "Global Interval dipakai keyword tanpa override; Adaptive Scheduling dapat mempercepat sementara tanpa mengubah nilai user." },
+      { name: "Discovery Schedule", meaning: "Global Interval dipakai keyword tanpa override; Adaptive Scheduling dapat mempercepat sementara tanpa mengubah nilai user. Recovery timeout default 120 menit mencegah keyword terkunci oleh run yang terputus saat worker berhenti." },
       { name: "Default Search", meaning: "Region, date, sort, dan Max Pages menjadi default. Transcript dapat menambah kualitas; AI fallback dapat memakai credit lebih besar; media download sebaiknya OFF." },
       { name: "API Credit Management", meaning: "Warning memberi peringatan; Critical menunda LOW; setelah limit hanya HIGH yang dapat berjalan sesuai guard." },
       { name: "Provider Health", meaning: "Last Successful Request dan Last Error menunjukkan kondisi terakhir; Requests/Credits adalah observability, bukan saldo provider." },

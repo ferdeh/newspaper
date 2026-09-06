@@ -1,4 +1,6 @@
 import stat
+import uuid
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import httpx
@@ -7,9 +9,16 @@ from pydantic import SecretStr
 from app.api import tiktok_discovery as tiktok_api
 from app.collectors.tiktok import ScrapeCreatorsTikTokProvider, TikTokSearchParams
 from app.config import settings
-from app.models import TikTokSettings
+from app.database import SessionLocal
+from app.models import MasterTikTokKeyword, TikTokSearchRun, TikTokSettings
 from app.services.encryption import decrypt_secret, encrypt_secret, mask_secret
-from app.services.tiktok_discovery import clean_webvtt, credit_guard, fast_relevance_screen
+from app.services.tiktok_discovery import (
+    clean_webvtt,
+    credit_guard,
+    execute_search_run,
+    fast_relevance_screen,
+    recover_stale_search_runs,
+)
 
 
 def test_scrapecreators_search_contract_and_trimmed_response(monkeypatch):
@@ -121,3 +130,68 @@ def test_fast_screening_and_credit_guard(monkeypatch):
     )
     assert credit_guard(SimpleNamespace(), row, "LOW") == (False, "CREDIT_CRITICAL_LOW_DEFERRED")
     assert credit_guard(SimpleNamespace(), row, "HIGH") == (True, "NORMAL")
+
+
+def test_stale_tiktok_run_is_failed_and_keyword_released():
+    now = datetime(2020, 1, 1, 12, 0, tzinfo=timezone.utc)
+    unique = uuid.uuid4().hex
+    with SessionLocal() as db:
+        keyword = MasterTikTokKeyword(
+            keyword=f"stale-recovery-{unique}",
+            priority="MEDIUM",
+            active=True,
+            next_run_at=now + timedelta(hours=1),
+        )
+        db.add(keyword)
+        db.flush()
+        stale_run = TikTokSearchRun(
+            keyword_id=keyword.id,
+            query_text=keyword.keyword,
+            provider="SCRAPECREATORS",
+            status="RUNNING",
+            started_at=now - timedelta(minutes=121),
+        )
+        fresh_run = TikTokSearchRun(
+            query_text=f"fresh-{unique}",
+            provider="SCRAPECREATORS",
+            status="RUNNING",
+            started_at=now - timedelta(minutes=5),
+        )
+        db.add_all([stale_run, fresh_run])
+        db.flush()
+
+        assert recover_stale_search_runs(db, now=now, stale_after_minutes=120) == 1
+        assert stale_run.status == "FAILED"
+        assert stale_run.finished_at == now
+        assert stale_run.error_message == "STALE_RUN_RECOVERED_AFTER_120_MINUTES"
+        assert keyword.next_run_at == now
+        assert fresh_run.status == "RUNNING"
+        db.rollback()
+
+
+def test_recovered_tiktok_run_cannot_call_provider_again():
+    now = datetime.now(timezone.utc)
+    with SessionLocal() as db:
+        run = TikTokSearchRun(
+            query_text=f"recovered-idempotence-{uuid.uuid4().hex}",
+            provider="SCRAPECREATORS",
+            status="FAILED",
+            started_at=now - timedelta(hours=3),
+            finished_at=now,
+            error_message="STALE_RUN_RECOVERED_AFTER_120_MINUTES",
+        )
+        db.add(run)
+        db.flush()
+
+        class ProviderMustNotRun:
+            name = "MUST_NOT_RUN"
+
+            def search_videos(self, _params):
+                raise AssertionError("Recovered run called the provider again")
+
+        summary = execute_search_run(db, run.id, provider=ProviderMustNotRun())
+
+        assert summary["status"] == "FAILED"
+        assert summary["api_requests"] == 0
+        assert summary["error"] == "STALE_RUN_RECOVERED_AFTER_120_MINUTES"
+        db.rollback()
